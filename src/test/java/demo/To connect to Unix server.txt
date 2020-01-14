@@ -1,0 +1,80 @@
+package Com.Elss.Libraries;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.testng.annotations.Test;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+
+
+public class JSchExampleSSHConnection {
+
+	/**
+	 * JSch Example Tutorial
+	 * Java SSH Connection Program
+	 */
+	@Test
+	public static void JSCH(String ortxt,String orzp) {
+	    String host="asa";
+	    String user="manhv";
+	    String password=".asa";
+	
+	    String command1="cd /archive/fmsqa/clientdata; pwd";
+	    String job1="cp R00as5.txt"+" "+ortxt;
+	    String job2="zip"+" "+orzp+" "+ortxt;
+	    String job3="rm"+" "+ortxt;
+	    try{
+	    	
+	    	java.util.Properties config = new java.util.Properties(); 
+	    	config.put("StrictHostKeyChecking", "no");
+	    	JSch jsch = new JSch();
+	    	Session session=jsch.getSession(user, host, 22);
+	    	session.setPassword(password);
+	    	session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
+	    	
+	    	session.setConfig(config);
+	    	session.connect();
+	    	System.out.println("Connected");
+	    	
+	    	runCommand(session,command1,job1,job2,job3);
+//	    	runCommand(session,job1);
+	    	
+//	        channel.disconnect();
+	        session.disconnect();
+	        System.out.println("DONE");
+	    }catch(Exception e){
+	    	e.printStackTrace();
+	    }
+
+	}
+	
+	public static void runCommand(Session session, String Job,String job1,String job2,String job3) throws JSchException, IOException{
+		Channel channel=session.openChannel("exec");
+        ((ChannelExec)channel).setCommand(Job+"&&"+job1+"&&"+job2+"&&"+job3);
+        
+        channel.setInputStream(null);
+        ((ChannelExec)channel).setErrStream(System.err);
+        
+        InputStream in=channel.getInputStream();
+        channel.connect();
+        byte[] tmp=new byte[1024];
+        while(true){
+          while(in.available()>0){
+            int i=in.read(tmp, 0, 1024);
+            if(i<0)break;
+            System.out.print(new String(tmp, 0, i));
+          }
+          if(channel.isClosed()){
+            System.out.println("exit-status: "+channel.getExitStatus());
+            break;
+          }
+          try{Thread.sleep(1000);}catch(Exception ee){}
+        
+	}
+	}
+}
